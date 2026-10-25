@@ -1,0 +1,117 @@
+用户提交任务时：
+前端 POST /api/task
+    ↓
+TaskRequest 校验请求数据
+    ↓
+检查问题是否为空
+    ↓
+确定 thread_id
+    ├─ 前端传入 → 使用原会话
+    └─ 前端未传 → 创建新会话
+    ↓
+检查当前会话是否正在上传
+    ↓
+TaskStore 创建 run_id
+    ├─ 已有活动任务 → 返回 HTTP 409
+    └─ 创建成功 → 状态 queued
+    ↓
+asyncio.create_task(execute_task(...))
+    ↓
+接口立即返回 HTTP 202
+    ├─ thread_id
+    └─ run_id
+
+
+后台任务执行流程：
+execute_task()
+    ↓
+设置 thread_id、run_id 上下文
+    ↓
+任务状态改为 running
+    ↓
+导入并调用 run_deep_agent()
+    ↓
+Agent 调用模型、子助手和工具
+    ↓
+monitor 产生执行事件
+    ↓
+事件先写入 SQLite
+    ↓
+再通过 WebSocket 推给前端
+    ↓
+任务结束
+    ├─ 成功 → task_result → succeeded
+    ├─ 异常 → error → failed
+    └─ 被取消 → interrupted
+    ↓
+恢复 ContextVar
+    ↓
+从 app.state.tasks 删除已完成任务
+
+
+WebSocket 流程：
+前端连接 /ws/{thread_id}
+    ↓
+检查 UUID 和 Origin
+    ↓
+接受连接并保存
+    ↓
+发送 ready
+    ↓
+实时接收 monitor 事件
+    ↓
+连接断开后清理
+
+
+文件流程：
+前端上传文件
+    ↓
+POST /api/upload
+    ↓
+检查 thread_id、任务状态、文件名、后缀和大小
+    ↓
+获取该会话的上传锁
+    ↓
+保存到会话工作目录
+    ↓
+前端通过 /api/files 查询
+    ↓
+通过 /api/download 下载
+
+
+服务关闭流程：
+收到 Ctrl+C
+    ↓
+进入 lifespan 关闭阶段
+    ↓
+取消未完成后台任务
+    ↓
+gather 等待任务完成清理
+    ↓
+关闭 SQLite
+    ↓
+event loop 和 Uvicorn 结束
+
+
+最核心的主链路是：
+前端提交任务
+→ server.py 校验并登记
+→ 后台执行 Agent
+→ monitor 记录并推送事件
+→ TaskStore 保存状态和结果
+→ 前端通过 WebSocket/状态接口展示
+
+
+# docker 拉起minIO镜像
+
+docker run -d --name minio-local `
+  --restart unless-stopped `
+  -p 9000:9000 `
+  -p 9001:9001 `
+  -e MINIO_ROOT_USER=deep_search_pro_user `
+  -e MINIO_ROOT_PASSWORD='xxxxx' `
+  -v "D:\minio-data:/data" `
+  docker.io/pgsty/silo:latest server /data --console-address ":9001"
+
+minIO 控制台：http://127.0.0.1:9001
+文件 API：http://127.0.0.1:9000

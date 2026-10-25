@@ -1,0 +1,11 @@
+.superpowers/
+.idea/
+**/venv/
+**/node_modules/
+**/.env
+**/__pycache__/
+**/output/
+**/updated/
+**/data/
+**/dist/
+**/test-results/

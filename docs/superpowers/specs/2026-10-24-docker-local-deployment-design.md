@@ -4,7 +4,7 @@
 
 ## 目标
 
-为 `deep-search-pro-master` 补齐可公开提交到 GitHub 的个人本地 Docker 部署配置。使用一条 `docker compose up -d` 命令启动前端、后端、MySQL 和 MinIO；模型 API、Tavily 与 RAGFlow 保持为外部服务。
+为 `deep-search-pro-master` 补齐可公开提交到 GitHub 的个人本地 Docker 部署配置。使用一条 `docker compose up -d` 命令启动前端、后端、MySQL 和 MinIO 兼容对象存储；模型 API、Tavily 与 RAGFlow 保持为外部服务。
 
 ## 范围
 
@@ -13,7 +13,7 @@
 - 根目录 Compose 编排及 Compose 环境变量示例。
 - 后端 Linux 多阶段镜像，包含 WeasyPrint 所需 Pango、GLib、Harfbuzz 和中文字体。
 - 前端 Vue 构建镜像及 Nginx 静态文件、HTTP API、WebSocket 代理配置。
-- MySQL、MinIO 数据卷、健康检查和服务启动依赖。
+- MySQL、MinIO 兼容对象存储数据卷、健康检查和服务启动依赖。
 - 后端模型环境变量兼容与环境变量示例同步。
 - Docker 使用说明、忽略规则和本地验证命令。
 
@@ -44,9 +44,9 @@ frontend (Nginx + Vue 静态文件)
 | --- | --- | --- |
 | 前端 | `127.0.0.1:5173` | 主要访问入口 |
 | 后端 | `127.0.0.1:8000` | Swagger、调试和健康检查 |
-| MySQL | `127.0.0.1:3306` | 本地数据库调试 |
-| MinIO API | `127.0.0.1:9000` | 浏览器下载和对象 API |
-| MinIO Console | `127.0.0.1:9001` | 本地对象管理 |
+| MySQL | `127.0.0.1:3307` | 本地数据库调试 |
+| MinIO API | `127.0.0.1:9010` | 浏览器下载和对象 API |
+| MinIO Console | `127.0.0.1:9011` | 本地对象管理 |
 
 所有端口只绑定回环地址，不向局域网公开。
 
@@ -79,9 +79,9 @@ MySQL 使用官方 8.4 镜像和命名卷。Compose 为个人本地环境提供�
 
 工作台元数据连接使用 `APP_MYSQL_*`。Agent 的可选数据库工具使用 `MYSQL_*`；默认指向同一个本地数据库，用户可以通过未提交的根 `.env` 覆盖。
 
-### MinIO
+### 对象存储
 
-MinIO 使用官方镜像和命名卷，同时开放 API 与 Console。后端内部使用 `minio:9000`，下发给浏览器的预签名地址使用 `127.0.0.1:9000`。后端现有启动逻辑负责确认 bucket；Compose 健康检查阻止后端在 MinIO 未就绪时启动。
+对象存储使用 PGSTY SILO 固定版本镜像和命名卷，同时开放 API 与 Console。SILO 是社区维护的 MinIO 分支，保留 S3 API、`MINIO_*` 环境变量和数据接口。Compose 仍使用服务名 `minio`，因此后端内部地址保持 `minio:9000`，下发给浏览器的预签名地址使用 `127.0.0.1:9010`。后端现有启动逻辑负责确认 bucket；Compose 使用 SILO 内置探针阻止后端在对象存储未就绪时启动。
 
 ## 配置与密钥
 
@@ -99,13 +99,14 @@ MinIO 使用官方镜像和命名卷，同时开放 API 与 Console。后端内�
 - `minio-data`：MinIO 对象。
 - `backend-output`：Agent 会话产物。
 - `backend-updated`：后端更新或中间产物。
+- `backend-data`：任务状态与 LangGraph checkpoint SQLite 数据。
 
 普通 `docker compose down` 保留数据；只有用户明确执行 `docker compose down -v` 才删除全部命名卷。
 
 ## 健康检查与启动顺序
 
-1. MySQL 和 MinIO 启动并通过各自健康检查。
-2. 后端启动，初始化工作台数据库表、MinIO bucket 和后台清理任务。
+1. MySQL 和对象存储启动并通过各自健康检查。
+2. 后端启动，初始化工作台数据库表、对象存储 bucket 和后台清理任务。
 3. 前端 Nginx 启动并代理 API/WebSocket。
 
 后端健康检查使用 `GET /api/health`。Compose 中 `depends_on.condition: service_healthy` 只解决启动顺序；运行期间的外部模型或 RAGFlow 错误继续由现有任务状态和 WebSocket 事件返回。
@@ -115,7 +116,7 @@ MinIO 使用官方镜像和命名卷，同时开放 API 与 Console。后端内�
 - `.dockerignore` 排除 `.env`、虚拟环境、Node modules、构建产物、运行目录、IDE 文件和测试缓存。
 - 不把真实密钥写入 Dockerfile、Compose 默认值或前端 `VITE_*` 变量。
 - 后端镜像以非 root 用户运行。
-- MySQL、MinIO 和后端调试端口只绑定 `127.0.0.1`。
+- MySQL、对象存储和后端调试端口只绑定 `127.0.0.1`。
 - PDF 转换继续使用现有受限资源抓取器，不开放网络或任意本地文件访问。
 
 ## 验收
@@ -139,9 +140,9 @@ curl.exe http://127.0.0.1:5173/api/health
 功能验证：
 
 - 从前端提交最小 Agent 任务并收到 WebSocket 事件。
-- 上传文件后在 MinIO 创建对象并在 MySQL 写入元数据。
+- 上传文件后在对象存储创建对象并在 MySQL 写入元数据。
 - 在后端容器中将包含中文、粗体和表格的 Markdown 转成 PDF。
-- 重启 Compose 后 MySQL、MinIO 和 Agent 文件仍存在。
+- 重启 Compose 后 MySQL、对象存储和 Agent 文件仍存在。
 
 ## 交付文件
 

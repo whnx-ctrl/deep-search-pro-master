@@ -1,0 +1,127 @@
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm;
+
+  @bottom-center {
+    content: counter(page) " / " counter(pages);
+    color: #718078;
+    font-size: 8.5pt;
+  }
+}
+
+html {
+  color: #1f2924;
+  font-family: "Noto Sans CJK SC", "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 11pt;
+  line-height: 1.7;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  break-after: avoid;
+  color: #183d2d;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+h1 {
+  margin: 0 0 14mm;
+  border-bottom: 2px solid #6f9f87;
+  padding-bottom: 4mm;
+  font-size: 24pt;
+}
+
+h2 {
+  margin: 9mm 0 3mm;
+  font-size: 17pt;
+}
+
+h3 {
+  margin: 6mm 0 2mm;
+  font-size: 13.5pt;
+}
+
+p,
+ul,
+ol,
+blockquote,
+pre,
+table {
+  margin: 0 0 4mm;
+}
+
+a {
+  color: #286348;
+  text-decoration: none;
+}
+
+blockquote {
+  break-inside: avoid;
+  margin-left: 0;
+  border-left: 3px solid #8fb5a2;
+  padding: 2mm 4mm;
+  background: #f3f7f4;
+  color: #45564d;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+}
+
+thead {
+  display: table-header-group;
+  background: #e7f0eb;
+}
+
+tr {
+  break-inside: avoid;
+}
+
+th,
+td {
+  border: 1px solid #b8c8bf;
+  padding: 2mm 2.5mm;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+code {
+  font-family: "Noto Sans Mono CJK SC", "Consolas", monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  break-inside: avoid;
+  border: 1px solid #d7e1db;
+  border-radius: 3px;
+  padding: 3mm;
+  background: #f5f7f6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 4mm auto;
+}
+
+hr {
+  margin: 7mm 0;
+  border: 0;
+  border-top: 1px solid #cbd8d1;
+}
+
+.page-break {
+  break-before: page;
+}
