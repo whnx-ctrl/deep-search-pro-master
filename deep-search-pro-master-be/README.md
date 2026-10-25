@@ -383,19 +383,6 @@ docker compose logs --tail 200 backend
 
 ---
 
-## 🗺️ 后续优化方向
-
-| 优化项 | 状态 | 目标 |
-|--------|------|------|
-| WeasyPrint PDF 链路 | ✅ 已完成 | 摆脱 Word COM，同时支持 Windows 与 Linux |
-| 子智能体反思机制 | 📋 计划中 | 子智能体输出后执行结构化自检，提高结果准确性 |
-| JWT 认证 | 📋 计划中 | 为 `/api/task` 及文件、会话接口增加身份与权限校验 |
-| LangGraph 人工审批节点 | 📋 计划中 | 敏感工具执行前暂停流程，等待用户确认后继续 |
-| 子智能体通信 | 📋 计划中 | 让数据库、网络搜索和知识库子智能体交换中间结论 |
-| Node + Chromium/Puppeteer PDF | 🔍 评估中 | 支持 Mermaid、数学公式和更完整的复杂 CSS 浏览器排版 |
-
----
-
 ## 📄 License
 
 MIT License
