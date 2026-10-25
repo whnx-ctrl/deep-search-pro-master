@@ -272,47 +272,6 @@ ws://127.0.0.1:8000/ws/{thread_id}
 
 ---
 
-## 📄 Markdown 转 PDF
-
-PDF 链路已经从 Word COM 改为跨平台实现：
-
-```text
-Markdown
-  → Python Markdown 转 HTML
-  → 加载 assets/pdf/default.css
-  → WeasyPrint 渲染
-  → 校验 PDF 文件头和页面
-  → 原子写入最终文件
-```
-
-相关文件：
-
-| 文件 | 职责 |
-|------|------|
-| `tools/pdf_tools.py` | Agent 工具参数、输出文件名和会话路径校验 |
-| `utils/word_converter.py` | Markdown、HTML、CSS、资源限制和 PDF 生成 |
-| `assets/pdf/default.css` | PDF 默认视觉样式 |
-
-`utils/word_converter.py` 保留了历史文件名，但当前实现不再依赖 Microsoft Word。转换器会转义原始 HTML、禁止网络资源，并将本地图片访问限制在当前会话工作区内。
-
----
-
-## 💾 持久化与清理
-
-| 数据 | 存储位置 | 用途 |
-|------|----------|------|
-| 任务与事件 | `data/tasks.sqlite3` | 任务状态、错误和实时事件回放 |
-| Agent 检查点 | `data/checkpoints.sqlite3` | LangGraph 会话状态 |
-| 文件元数据 | MySQL | 文件状态、对象键、大小、哈希和软删除信息 |
-| 文件内容 | S3/MinIO 兼容对象存储 | 上传文件和 Agent 生成文件 |
-| 临时文件 | `output/session_{thread_id}` | 单次会话执行工作区 |
-
-服务启动时会把未完成任务标记为 `interrupted`，初始化文件表与对象存储桶，并清理超过 `WORKSPACE_MAX_AGE_HOURS` 的陈旧本地工作区。
-
-删除会话不是只删本地目录：当前实现还会删除对象存储中的关联对象、软删除 MySQL 元数据、清理 LangGraph 检查点以及 SQLite 中的任务和事件记录。
-
----
-
 ## 🛡️ 安全边界
 
 - 会话路径经过规范化和越界校验，Agent 不能写出当前会话工作区。
