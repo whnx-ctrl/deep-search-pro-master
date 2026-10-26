@@ -158,7 +158,10 @@ Copy-Item .env.example .env
 也可以直接启动 Uvicorn：
 
 ```powershell
-.\venv\Scripts\python.exe -m uvicorn api.server:app --host 127.0.0.1 --port 8000 --reload
+.\venv\Scripts\python.exe -m uvicorn api.server:app `
+  --host 127.0.0.1 `
+  --port 8000 `
+  --reload
 ```
 
 如 Pango/GLib 安装在 MSYS2 的 UCRT64 目录，可在启动前设置：

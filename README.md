@@ -152,7 +152,10 @@ Copy-Item .env.example .env
 配置 `.env` 后启动：
 
 ```powershell
-.\scripts\start-backend.ps1 -Reload
+.\venv\Scripts\python.exe -m uvicorn api.server:app `
+  --host 127.0.0.1 `
+  --port 8000 `
+  --reload
 ```
 
 Windows 原生生成 PDF 需要 Pango/GLib。若安装在 MSYS2 UCRT64 默认目录，启动前设置：
