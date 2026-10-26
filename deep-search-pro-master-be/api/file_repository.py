@@ -8,6 +8,36 @@ from sqlalchemy import URL, text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 
+FILES_TABLE_DDL = """
+CREATE TABLE IF NOT EXISTS files (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '内部自增主键',
+    uuid CHAR(36) NOT NULL COMMENT '对外文件UUID',
+    thread_uuid CHAR(36) NOT NULL COMMENT '所属会话UUID',
+    original_name VARCHAR(255) NOT NULL COMMENT '上传或生成时的原始文件名',
+    workspace_name VARCHAR(255) NOT NULL COMMENT 'Agent工作区中的唯一文件名',
+    object_key VARCHAR(512) NOT NULL COMMENT 'MinIO对象键，不含bucket和endpoint',
+    content_type VARCHAR(128) NOT NULL DEFAULT 'application/octet-stream' COMMENT 'MIME类型',
+    size_bytes BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '文件大小，字节',
+    sha256 CHAR(64) NOT NULL COMMENT '文件SHA-256摘要',
+    file_source VARCHAR(16) NOT NULL COMMENT 'uploaded或generated',
+    file_status VARCHAR(16) NOT NULL COMMENT 'pending、ready、failed、deleting',
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间，UTC',
+    updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+        ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间，UTC',
+    deleted_at DATETIME(3) NULL DEFAULT NULL COMMENT '软删除时间，NULL表示未删除',
+    PRIMARY KEY pk_id (id),
+    UNIQUE KEY uk_uuid (uuid),
+    UNIQUE KEY uk_object_key (object_key),
+    KEY idx_thread_uuid_id (thread_uuid, id),
+    KEY idx_thread_uuid_status_id (thread_uuid, file_status, id)
+)
+ENGINE=InnoDB
+DEFAULT CHARACTER SET=utf8mb4
+COLLATE=utf8mb4_0900_ai_ci
+COMMENT='工作台文件元信息'
+"""
+
+
 class FileRepository:
     """Owns SQL access to the workbench ``files`` table."""
 
@@ -19,8 +49,9 @@ class FileRepository:
         )
 
     async def open(self) -> None:
-        async with self._engine.connect() as connection:
+        async with self._engine.begin() as connection:
             await connection.execute(text("SELECT 1"))
+            await connection.execute(text(FILES_TABLE_DDL))
 
     async def close(self) -> None:
         await self._engine.dispose()
